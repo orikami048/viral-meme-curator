@@ -1,7 +1,8 @@
 # encoding: utf-8
-"""Auto Publisher: Publishes adapted U.S. viral memes to X/Twitter with Stealth Anti-Detection."""
+"""Auto Publisher: Publishes adapted U.S. viral memes to X/Twitter with Stealth Anti-Detection & History Logging."""
 
 import argparse
+import datetime
 import json
 import os
 import random
@@ -27,6 +28,31 @@ def load_config():
     return {}
 
 
+def record_history(tweet_text, status="success", platform="twitter"):
+    """Record post into history log for Dashboard statistics."""
+    history_path = Path(__file__).resolve().parent.parent / "temp" / "history.json"
+    history_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    history = []
+    if history_path.exists():
+        try:
+            with open(history_path, "r", encoding="utf-8") as f:
+                history = json.load(f)
+        except Exception:
+            history = []
+            
+    history.append({
+        "id": f"hist_{int(time.time()*1000)}",
+        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "platform": platform,
+        "content": tweet_text,
+        "status": status
+    })
+    
+    with open(history_path, "w", encoding="utf-8") as f:
+        json.dump(history, f, ensure_ascii=False, indent=2)
+
+
 def human_sleep(min_sec=1.5, max_sec=4.0):
     """Simulate human pause delay."""
     time.sleep(random.uniform(min_sec, max_sec))
@@ -46,9 +72,11 @@ def publish_tweet_api(tweet_text, config):
         response = client.create_tweet(text=tweet_text)
         tweet_id = response.data.get("id")
         print(f"✅ [API] Successfully posted tweet! ID: {tweet_id}")
+        record_history(tweet_text, status="success")
         return True
     except Exception as e:
         print(f"❌ [API Error]: {e}")
+        record_history(tweet_text, status=f"error: {e}")
         return False
 
 
@@ -100,16 +128,13 @@ def publish_tweet_stealth_browser(tweet_text, auth_token=None):
             page.goto("https://x.com/compose/post", wait_until="domcontentloaded")
             human_sleep(3.0, 5.0)
 
-            # Check if login is required
             if "login" in page.url:
                 print("\n⚠️ Twitter Auth Token required or Session Expired!")
-                print("Please fill in your 'auth_token' cookie in config.json to enable 1-click publishing.")
-                print("Or log in once in the opened browser window...")
-                page.wait_for_timeout(15000)
+                page.wait_for_timeout(10000)
 
-            # Find post textbox
+            # Find post textbox (using .first to avoid strict mode violations)
             try:
-                textbox = page.locator('[data-testid="tweetTextarea_0"]')
+                textbox = page.locator('[data-testid="tweetTextarea_0"]').first
                 textbox.wait_for(timeout=10000)
                 textbox.click()
                 human_sleep(0.5, 1.5)
@@ -122,7 +147,7 @@ def publish_tweet_stealth_browser(tweet_text, auth_token=None):
                 human_sleep(1.5, 3.0)
 
                 # Click post button with human mouse hover
-                post_btn = page.locator('[data-testid="tweetButton"]')
+                post_btn = page.locator('[data-testid="tweetButton"]').first
                 post_btn.hover()
                 human_sleep(0.5, 1.0)
                 post_btn.click()
@@ -131,15 +156,18 @@ def publish_tweet_stealth_browser(tweet_text, auth_token=None):
                 human_sleep(4.0, 6.0)
 
                 print("✅ [Stealth Mode] Tweet posted successfully!")
+                record_history(tweet_text, status="success")
                 browser.close()
                 return True
             except Exception as e_box:
                 print(f"❌ Textbox or post button not found: {e_box}")
+                record_history(tweet_text, status=f"error: {e_box}")
                 browser.close()
                 return False
 
     except Exception as e:
         print(f"❌ [Stealth Mode Error]: {e}")
+        record_history(tweet_text, status=f"error: {e}")
         return False
 
 
