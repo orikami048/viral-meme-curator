@@ -1,5 +1,5 @@
 # encoding: utf-8
-"""Viral Meme & Traffic Engine Rewriter: Cold, Absurd & Deadpan Humorous Rewrite Engine for X/Twitter."""
+"""Viral Meme & Traffic Engine Rewriter: Implements the English Internet Meme Generator Skill for native, effortless X/Twitter posts."""
 
 import argparse
 import json
@@ -36,77 +36,43 @@ def download_meme_image(url, index=1):
     return None
 
 
-def generate_cold_absurd_tweet(raw_title):
-    """Generate high-impression cold, deadpan & absurd tweets (ChatGPT/User Persona Style)."""
-    clean_title = raw_title.strip()
+def generate_native_meme_versions(title_text):
+    """Generate 3 native meme variations adhering to the English Internet Meme Generator Skill:
+       1. Safe / Universally Relatable
+       2. Darker / More Cynical
+       3. Weirder / More Absurd
+    """
+    clean_title = title_text.strip()
     
-    # 1. Check for specific topic matches
-    if "lock in" in clean_title.lower() or "tiktok" in clean_title.lower() or "study" in clean_title.lower():
-        return (
-            "me: \"I'm locking in today to fix my life\"\n\n"
-            "one minor inconvenience happens\n\n"
-            "me: \"perhaps the universe is telling me to sleep 14 hours\"\n\n"
-            "the universe: \"bro you just forgot your password\""
-        )
-    
-    if "work" in clean_title.lower() or "job" in clean_title.lower() or "boss" in clean_title.lower():
-        return (
-            "We used to be afraid of global chaos.\n\n"
-            "Now I'm afraid my Wi-Fi will disconnect while I'm pretending to work."
-        )
-
-    if "ai" in clean_title.lower() or "tech" in clean_title.lower() or "bot" in clean_title.lower():
-        return (
-            "POV: you finally realize nobody knows what they're doing\n\n"
-            "You: 🗿\n"
-            "Your boss: 🗿\n"
-            "The engineer: 🗿\n"
-            "The AI: 🗿\n\n"
-            "everyone just clicking 'I agree' and hoping for the best"
-        )
-
-    if "self" in clean_title.lower() or "mind" in clean_title.lower() or "life" in clean_title.lower():
-        return (
-            "POV: you spent years trying to understand yourself\n\n"
-            "Philosophy: 🗿\n"
-            "Psychology: 🗿\n"
-            "MBTI test: 🗿\n"
-            "Astrology: 🗿\n\n"
-            "“maybe I'm just hungry”"
-        )
-
-    # 2. Universal Cold/Absurd Viral Formats for any Reddit topic
-    formats = [
-        # Format A: Universal cluelessness 🗿 Grid
-        (
-            f"POV: {clean_title.lower()}\n\n"
-            "You: 🗿\n"
-            "The internet: 🗿\n"
-            "The experts: 🗿\n"
-            "The universe: 🗿\n\n"
-            "everyone just pretending they saw nothing"
-        ),
-        # Format B: Monologue vs Mundane Reality
-        (
-            f"me: \"finally getting my life together\"\n\n"
-            f"also me after encountering '{clean_title.lower()}':\n\n"
-            "\"perhaps I should restart my router and pretend today didn't happen\""
-        ),
-        # Format C: Cold Contrast
-        (
-            f"Remember when life was simple?\n\n"
-            f"Now we're out here dealing with: {clean_title.lower()}\n\n"
-            "and everyone is just clicking 'Accept All Cookies' hoping it fixes everything"
-        ),
-        # Format D: Deadpan Realization
-        (
-            f"POV: {clean_title}\n\n"
-            "overthinking level: 100%\n"
-            "actual problem: bro forgot to drink water"
-        )
+    # Version 1: Safe / Universally Relatable
+    v1_safe = [
+        f"POV: {clean_title.lower()}\n\n11:47 PM:\n\"Tomorrow I'm waking up early and fixing my life.\"\n\n3:16 AM:\n\"One more video.\"",
+        f"Me: \"I'm protecting my peace today.\"\n\nAlso me:\nopens the exact same profile for the 17th time",
+        f"POV: {clean_title.lower()}\n\none minor inconvenience happens\n\nme: \"perhaps the universe is trying to tell me something\"\n\nthe universe: \"bro you forgot your password\"",
+        f"Everyone in 2026 trying to get their life together:\n\n{clean_title.lower()}\n\neveryone just clicking 'I agree' and hoping for the best"
     ]
 
-    return random.choice(formats)
+    # Version 2: Darker / More Cynical
+    v2_cynical = [
+        f"Self improvement is crazy.\n\nYou spend 40 minutes reading about: {clean_title.lower()}\n\ninstead of doing the actual thing\n\nand somehow consider that research.",
+        f"We used to be afraid of global disasters.\n\nNow I'm afraid my Wi-Fi will disconnect while I'm pretending to work.",
+        f"POV: you finally realize nobody knows what they're doing\n\nYou: 🗿\nYour boss: 🗿\nThe doctor: 🗿\nThe government: 🗿\n\neveryone just clicking 'Accept All' and hoping nobody notices",
+        f"You spend years trying to understand your life.\n\nJung: 🗿\nFreud: 🗿\nMBTI: 🗿\nAstrology: 🗿\n\n\"maybe I'm just hungry\""
+    ]
+
+    # Version 3: Weirder / More Absurd
+    v3_absurd = [
+        f"Me: \"I need to stop wasting my time.\"\n\nAlso me at 2:43 AM:\nresearching if {clean_title.lower()} is technically legal in international waters",
+        f"Nobody:\n\nAbsolutely nobody:\n\nMe at 3 AM:\n\"Maybe I should completely delete my online footprint and move to a farm.\"",
+        f"Top: Me saying everything is under control\n\nMiddle: One email arrives about '{clean_title.lower()}'\n\nBottom: The ancient survival instincts return 🗿",
+        f"POV: {clean_title.lower()}\n\noverthinking level: 1000%\nactual problem: bro forgot to drink water"
+    ]
+
+    return {
+        "safe": random.choice(v1_safe),
+        "cynical": random.choice(v2_cynical),
+        "absurd": random.choice(v3_absurd)
+    }
 
 
 def rewrite_post_for_max_traffic(item, index=1):
@@ -117,20 +83,33 @@ def rewrite_post_for_max_traffic(item, index=1):
     # Step 1: Download real visual scene image from Reddit
     scene_image_path = download_meme_image(img_url, index=index)
 
-    # Step 2: Generate cold, absurd, deadpan viral tweet
-    adapted = generate_cold_absurd_tweet(raw_title)
+    # Step 2: Generate 3 native meme variations
+    versions = generate_native_meme_versions(raw_title)
+
+    # Pick version based on rotation / index
+    if index % 3 == 1:
+        chosen_tweet = versions["safe"]
+        variant_tag = "Safe/Relatable"
+    elif index % 3 == 2:
+        chosen_tweet = versions["cynical"]
+        variant_tag = "Darker/Cynical"
+    else:
+        chosen_tweet = versions["absurd"]
+        variant_tag = "Weirder/Absurd"
 
     return {
         "original_id": item.get("id"),
         "original_text": raw_title,
         "source": source,
-        "adapted_tweet": adapted,
+        "variant": variant_tag,
+        "adapted_tweet": chosen_tweet,
+        "all_versions": versions,
         "image_path": scene_image_path
     }
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Rewrite Reddit posts in cold, absurd deadpan viral style")
+    parser = argparse.ArgumentParser(description="Rewrite Reddit posts using native English Internet Meme Generator skill rules")
     parser.add_argument("--input-file", default="temp/reddit_trending.json", help="Input scraped JSON file")
     parser.add_argument("--output", default="temp/rewritten_memes.json", help="Output path")
     args = parser.parse_args()
@@ -150,7 +129,7 @@ def main():
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(rewritten, f, ensure_ascii=False, indent=2)
 
-    print(f"🔥 Successfully converted {len(rewritten)} Reddit posts into cold absurd viral tweets -> {out_path}")
+    print(f"🔥 Successfully converted {len(rewritten)} Reddit posts using English Internet Meme Generator Skill -> {out_path}")
 
 
 if __name__ == "__main__":
