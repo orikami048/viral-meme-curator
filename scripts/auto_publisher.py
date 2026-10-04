@@ -62,20 +62,26 @@ def publish_tweet_stealth_browser(tweet_text, auth_token=None, user_data_dir=Non
 
         print("🛡️ [Stealth Mode] Launching Anti-Detection Browser...")
         with sync_playwright() as p:
+            context = None
             if user_data_dir and os.path.exists(user_data_dir):
                 print(f"🌐 Reusing user Chrome Profile: {user_data_dir}")
-                context = p.chromium.launch_persistent_context(
-                    user_data_dir=user_data_dir,
-                    headless=False,
-                    channel="chrome",
-                    args=[
-                        "--disable-blink-features=AutomationControlled",
-                        "--no-sandbox",
-                        "--disable-infobars",
-                    ]
-                )
-                page = context.pages[0] if context.pages else context.new_page()
-            else:
+                try:
+                    context = p.chromium.launch_persistent_context(
+                        user_data_dir=user_data_dir,
+                        headless=False,
+                        channel="chrome",
+                        args=[
+                            "--disable-blink-features=AutomationControlled",
+                            "--no-sandbox",
+                            "--disable-infobars",
+                        ]
+                    )
+                    page = context.pages[0] if context.pages else context.new_page()
+                except Exception as e_lock:
+                    print(f"Notice: Chrome profile is locked by running Chrome process ({e_lock}). Launching standalone stealth browser...")
+                    context = None
+
+            if not context:
                 browser = p.chromium.launch(
                     headless=False,
                     args=[
