@@ -1,8 +1,9 @@
 # encoding: utf-8
-"""Auto Publisher: Publishes adapted U.S. viral memes to X/Twitter with Stealth Anti-Detection."""
+"""Auto Publisher: Publishes adapted U.S. viral memes to X/Twitter using official API, auth_token, or Chrome User Data profile."""
 
 import argparse
 import json
+import os
 import random
 import sys
 import time
@@ -51,7 +52,7 @@ def publish_tweet_api(tweet_text, config):
         return False
 
 
-def publish_tweet_stealth_browser(tweet_text, auth_token):
+def publish_tweet_stealth_browser(tweet_text, auth_token=None, user_data_dir=None):
     """Anti-Detection Stealth Browser Auto-Publisher."""
     try:
         try:
@@ -59,56 +60,65 @@ def publish_tweet_stealth_browser(tweet_text, auth_token):
         except ImportError:
             from playwright.sync_api import sync_playwright
 
-        print("🛡️ [Stealth Mode] Launching Anti-Detection Browser (hiding navigator.webdriver)...")
+        print("🛡️ [Stealth Mode] Launching Anti-Detection Browser...")
         with sync_playwright() as p:
-            # Stealth Chrome launch arguments to bypass Cloudflare & Twitter Bot Guard
-            browser = p.chromium.launch(
-                headless=False,
-                args=[
-                    "--disable-blink-features=AutomationControlled",
-                    "--disable-dev-shm-usage",
-                    "--no-sandbox",
-                    "--disable-infobars",
-                    "--window-size=1280,800",
-                ]
-            )
-            
-            context = browser.new_context(
-                viewport={"width": 1280, "height": 800},
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-                locale="en-US",
-                timezone_id="America/New_York"
-            )
+            if user_data_dir and os.path.exists(user_data_dir):
+                print(f"🌐 Reusing user Chrome Profile: {user_data_dir}")
+                context = p.chromium.launch_persistent_context(
+                    user_data_dir=user_data_dir,
+                    headless=False,
+                    channel="chrome",
+                    args=[
+                        "--disable-blink-features=AutomationControlled",
+                        "--no-sandbox",
+                        "--disable-infobars",
+                    ]
+                )
+                page = context.pages[0] if context.pages else context.new_page()
+            else:
+                browser = p.chromium.launch(
+                    headless=False,
+                    args=[
+                        "--disable-blink-features=AutomationControlled",
+                        "--no-sandbox",
+                        "--disable-infobars",
+                    ]
+                )
+                context = browser.new_context(
+                    viewport={"width": 1280, "height": 800},
+                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                    locale="en-US",
+                    timezone_id="America/New_York"
+                )
+
+                if auth_token:
+                    context.add_cookies([{
+                        "name": "auth_token",
+                        "value": auth_token,
+                        "domain": ".x.com",
+                        "path": "/",
+                        "secure": True,
+                        "httpOnly": True
+                    }])
+                page = context.new_page()
 
             # Mask automation properties
-            context.add_init_script("""
+            page.add_init_script("""
                 Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
                 window.chrome = { runtime: {} };
             """)
 
-            # Add login auth token
-            context.add_cookies([{
-                "name": "auth_token",
-                "value": auth_token,
-                "domain": ".x.com",
-                "path": "/",
-                "secure": True,
-                "httpOnly": True
-            }])
-
-            page = context.new_page()
-            print("🌐 Navigating to X/Twitter compose page...")
+            print("🌐 Navigating to X/Twitter compose page (https://x.com/compose/post)...")
             page.goto("https://x.com/compose/post", wait_until="domcontentloaded")
-            human_sleep(2.0, 4.0)
+            human_sleep(2.5, 4.5)
 
             # Find post textbox
             textbox = page.locator('[data-testid="tweetTextarea_0"]')
-            textbox.wait_for(timeout=10000)
+            textbox.wait_for(timeout=15000)
             textbox.click()
             human_sleep(0.5, 1.5)
 
             print("⌨️ Simulating human typing with random keystroke delays...")
-            # Human typing speed simulation (50ms ~ 120ms delay per char)
             for char in tweet_text:
                 page.keyboard.type(char)
                 time.sleep(random.uniform(0.04, 0.12))
@@ -124,8 +134,8 @@ def publish_tweet_stealth_browser(tweet_text, auth_token):
             print("⏳ Waiting for X/Twitter server confirmation...")
             human_sleep(4.0, 6.0)
 
-            print("✅ [Stealth Mode] Tweet posted successfully without detection!")
-            browser.close()
+            print("✅ [Stealth Mode] Tweet posted successfully to your Twitter account!")
+            context.close()
             return True
     except Exception as e:
         print(f"❌ [Stealth Mode Error]: {e}")
@@ -149,11 +159,11 @@ def main():
 
     config = load_config()
     tw_cfg = config.get("twitter", {})
+    user_chrome_dir = os.path.expanduser(r"~\AppData\Local\Google\Chrome\User Data")
 
     print(f"Loaded {len(posts)} posts for platform '{args.platform}' (Dry-Run: {args.dry_run})...")
     
-    # Process posts with safety cooldown between posts
-    for i, p in enumerate(posts[:3], 1):  # Safety limit: max 3 per execution
+    for i, p in enumerate(posts[:3], 1):
         tweet_text = p.get("adapted_tweet", "")
         print(f"\n--- Post #{i}/{min(len(posts), 3)} ---")
         
@@ -167,15 +177,15 @@ def main():
             if tw_cfg.get("api_key") and tw_cfg.get("access_token"):
                 publish_tweet_api(tweet_text, config)
             elif tw_cfg.get("auth_token"):
-                publish_tweet_stealth_browser(tweet_text, tw_cfg.get("auth_token"))
+                publish_tweet_stealth_browser(tweet_text, auth_token=tw_cfg.get("auth_token"))
             else:
-                print("⚠️ No Twitter API Keys or auth_token found in config.json!")
-                print("Please edit config.json to fill in your auth_token cookie or API keys.")
+                # Direct user Chrome Profile reuse fallback
+                print("💡 Using your local Chrome User Data profile to publish...")
+                publish_tweet_stealth_browser(tweet_text, user_data_dir=user_chrome_dir)
 
-            # Cooldown between multiple posts to avoid rate limit flags
             if i < min(len(posts), 3) and not args.dry_run:
                 cooldown = random.randint(15, 35)
-                print(f"☕ Safety Cooldown: Sleeping {cooldown}s before next tweet to prevent rate limits...")
+                print(f"☕ Safety Cooldown: Sleeping {cooldown}s before next tweet...")
                 time.sleep(cooldown)
 
 
