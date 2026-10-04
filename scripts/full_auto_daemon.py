@@ -1,5 +1,5 @@
 # encoding: utf-8
-"""Full-Auto Daemon: Autonomous viral content curation, self-learning traffic optimization & auto-publishing pipeline."""
+"""Full-Auto Daemon: Autonomous viral Reddit content curation, self-learning traffic optimization & auto-publishing pipeline."""
 
 import argparse
 import datetime
@@ -24,15 +24,12 @@ def log_daemon(msg):
     print(f"[{ts}] 🤖 [Full-Auto Daemon] {msg}")
 
 
-def run_pipeline_cycle(mode="hybrid"):
-    log_daemon("Starting autonomous viral curation cycle...")
+def run_pipeline_cycle():
+    log_daemon("Starting autonomous Reddit viral curation cycle...")
 
-    # Step 1: Content Discovery (Toutiao + Reddit)
-    log_daemon("Step 1/4: Scraping Toutiao & Weibo hot search topics...")
-    subprocess.run([sys.executable, "scripts/fetch_toutiao_trending.py", "--limit", "3"], cwd=BASE_DIR)
-    
-    log_daemon("Step 1/4: Scraping Reddit memes...")
-    subprocess.run([sys.executable, "scripts/fetch_reddit_trending.py", "--subreddit", "memes", "--limit", "2"], cwd=BASE_DIR)
+    # Step 1: 100% Exclusive Reddit Content Discovery
+    log_daemon("Step 1/4: Scraping top live Reddit memes & hot topics (r/memes, r/dankmemes)...")
+    subprocess.run([sys.executable, "scripts/fetch_reddit_trending.py", "--subreddit", "memes", "--limit", "5"], cwd=BASE_DIR)
 
     # Step 2: Self-Learning Traffic Analytics
     log_daemon("Step 2/4: Running Self-Learning Traffic Analyzer...")
@@ -41,9 +38,9 @@ def run_pipeline_cycle(mode="hybrid"):
     except Exception as e:
         log_daemon(f"Traffic analyzer notice: {e}")
 
-    # Step 3: Meme Rewriting & Viral Hook Generation
-    log_daemon("Step 3/4: Rewriting posts into U.S. Gen-Z Viral Hooks...")
-    subprocess.run([sys.executable, "scripts/meme_rewriter.py", "--input-file", "temp/toutiao_trending.json"], cwd=BASE_DIR)
+    # Step 3: Meme Rewriting & Viral Hook Generation (Using Reddit JSON exclusively)
+    log_daemon("Step 3/4: Rewriting Reddit posts into U.S. Gen-Z Viral Hooks...")
+    subprocess.run([sys.executable, "scripts/meme_rewriter.py", "--input-file", "temp/reddit_trending.json"], cwd=BASE_DIR)
 
     # Step 4: Stealth Auto-Publishing to X/Twitter
     log_daemon("Step 4/4: Publishing to X/Twitter via Stealth Anti-Detection Browser...")
@@ -54,7 +51,7 @@ def run_pipeline_cycle(mode="hybrid"):
 
 def start_daemon_loop(interval_hours=2.5, run_once=False):
     log_daemon("==================================================")
-    log_daemon("🚀 FULL-AUTO TRAFFIC EVOLUTION DAEMON STARTED")
+    log_daemon("🚀 FULL-AUTO REDDIT TRAFFIC EVOLUTION DAEMON STARTED")
     log_daemon(f"⏰ Target Interval: {interval_hours} hours between posting cycles")
     log_daemon("==================================================")
 
@@ -85,7 +82,7 @@ def start_daemon_loop(interval_hours=2.5, run_once=False):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Full-Auto Traffic Evolution Daemon")
+    parser = argparse.ArgumentParser(description="Full-Auto Traffic Evolution Daemon (Reddit Exclusive)")
     parser.add_argument("--interval", type=float, default=2.5, help="Interval in hours between cycles")
     parser.add_argument("--once", action="store_true", help="Run a single cycle and exit")
     args = parser.parse_args()
