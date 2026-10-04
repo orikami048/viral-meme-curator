@@ -132,7 +132,7 @@ def publish_tweet_stealth_browser(tweet_text, auth_token=None, image_path=None):
                 print("\n⚠️ Twitter Auth Token required or Session Expired!")
                 page.wait_for_timeout(10000)
 
-            # Find post textbox (using .first to avoid strict mode violations)
+            # Find post textbox
             try:
                 textbox = page.locator('[data-testid="tweetTextarea_0"]').first
                 textbox.wait_for(timeout=10000)
@@ -147,30 +147,63 @@ def publish_tweet_stealth_browser(tweet_text, auth_token=None, image_path=None):
                 human_sleep(1.5, 3.0)
 
                 # Attach visual card image if provided
-                if image_path and os.path.exists(image_path):
-                    try:
-                        print(f"🖼️ Attaching visual card image: {image_path}")
-                        file_input = page.locator('input[data-testid="fileInput"]').first
-                        file_input.set_input_files(image_path)
-                        human_sleep(2.0, 4.0)
-                    except Exception as e_img:
-                        print(f"Notice: Failed to attach image ({e_img}), continuing text post...")
+                if image_path:
+                    abs_img_path = Path(image_path).resolve()
+                    if abs_img_path.exists():
+                        try:
+                            print(f"🖼️ Attaching visual card image: {abs_img_path}")
+                            file_input = page.locator('input[data-testid="fileInput"]').first
+                            file_input.wait_for(state="attached", timeout=10000)
+                            file_input.set_input_files(str(abs_img_path))
+                            human_sleep(3.0, 5.0)
+                            
+                            try:
+                                page.locator('[data-testid="attachments"]').first.wait_for(state="visible", timeout=10000)
+                                print("✅ Visual image preview rendered successfully!")
+                            except Exception:
+                                pass
+                        except Exception as e_img:
+                            print(f"Notice: Failed to attach image ({e_img}), continuing text post...")
 
-                # Click post button with human mouse hover
-                post_btn = page.locator('[data-testid="tweetButton"]').first
-                post_btn.hover()
-                human_sleep(0.5, 1.0)
-                post_btn.click()
+                # Find the EXACT active enabled post button (excluding disabled background buttons)
+                print("🚀 Locating active enabled Post button on X...")
+                active_btn = None
+                for attempt in range(15):
+                    btns = page.locator('[data-testid="tweetButton"], [data-testid="tweetButtonInline"]').all()
+                    for btn in btns:
+                        if btn.is_visible() and btn.get_attribute("aria-disabled") != "true":
+                            active_btn = btn
+                            break
+                    if active_btn:
+                        break
+                    time.sleep(1.0)
 
-                print("⏳ Waiting for X/Twitter server confirmation...")
-                human_sleep(4.0, 6.0)
+                if active_btn:
+                    print("✅ Found active Post button! Hovering and clicking...")
+                    active_btn.hover()
+                    human_sleep(0.5, 1.0)
+                    active_btn.click()
+                else:
+                    print("Notice: Active button not found by attribute, attempting fallback click & shortcut...")
+                    textbox.focus()
+                    page.keyboard.press("Control+Enter")
 
-                print("✅ [Stealth Mode] Tweet posted successfully!")
+                human_sleep(2.0, 3.0)
+
+                # Verification: Wait until compose dialog detaches (closes)
+                print("⏳ Waiting for server submission & compose window closure...")
+                try:
+                    page.locator('[data-testid="tweetTextarea_0"]').first.wait_for(state="detached", timeout=20000)
+                    print("✅ Compose box closed - Tweet successfully posted to X!")
+                except Exception:
+                    print("Notice: Compose window wait completed, finalizing safety delay...")
+                    human_sleep(4.0, 6.0)
+
                 record_history(tweet_text, status="success")
                 browser.close()
                 return True
             except Exception as e_box:
-                print(f"❌ Textbox or post button not found: {e_box}")
+                print(f"❌ Error during post composition: {e_box}")
                 record_history(tweet_text, status=f"error: {e_box}")
                 browser.close()
                 return False
@@ -185,7 +218,7 @@ def main():
     parser = argparse.ArgumentParser(description="Publish viral memes with stealth anti-detection")
     parser.add_argument("--input-file", default="temp/rewritten_memes.json", help="Input rewritten memes JSON")
     parser.add_argument("--platform", default="twitter", help="Target platform (twitter, reddit)")
-    parser.add_argument("--dry-run", action="store_true", help="Dry-run mode")
+    parser.add_argument("--dry-run", action="store_true", help="Dry-Run mode")
     args = parser.parse_args()
 
     in_path = Path(args.input_file)
@@ -210,6 +243,8 @@ def main():
             print("\n[DRY-RUN PREVIEW]")
             print("----------------------------------------")
             print(tweet_text)
+            if p.get("image_path"):
+                print(f"Attachment: {p.get('image_path')}")
             print("----------------------------------------")
             print("Status: Ready to publish (Dry-Run Mode)")
         else:
