@@ -80,7 +80,7 @@ def publish_tweet_api(tweet_text, config):
         return False
 
 
-def publish_tweet_stealth_browser(tweet_text, auth_token=None):
+def publish_tweet_stealth_browser(tweet_text, auth_token=None, image_path=None):
     """Anti-Detection Stealth Browser Auto-Publisher."""
     try:
         try:
@@ -146,6 +146,16 @@ def publish_tweet_stealth_browser(tweet_text, auth_token=None):
 
                 human_sleep(1.5, 3.0)
 
+                # Attach visual card image if provided
+                if image_path and os.path.exists(image_path):
+                    try:
+                        print(f"🖼️ Attaching visual card image: {image_path}")
+                        file_input = page.locator('input[data-testid="fileInput"]').first
+                        file_input.set_input_files(image_path)
+                        human_sleep(2.0, 4.0)
+                    except Exception as e_img:
+                        print(f"Notice: Failed to attach image ({e_img}), continuing text post...")
+
                 # Click post button with human mouse hover
                 post_btn = page.locator('[data-testid="tweetButton"]').first
                 post_btn.hover()
@@ -206,7 +216,7 @@ def main():
             if tw_cfg.get("api_key") and tw_cfg.get("access_token"):
                 publish_tweet_api(tweet_text, config)
             else:
-                publish_tweet_stealth_browser(tweet_text, auth_token=auth_token)
+                publish_tweet_stealth_browser(tweet_text, auth_token=auth_token, image_path=p.get("image_path"))
 
             if i < min(len(posts), 3) and not args.dry_run:
                 cooldown = random.randint(15, 35)
