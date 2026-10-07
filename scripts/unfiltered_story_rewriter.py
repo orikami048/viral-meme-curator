@@ -1,5 +1,5 @@
 # encoding: utf-8
-"""Unfiltered Story Rewriter: Rewrites raw Reddit topics into 100% Western/U.S. Rich Unfiltered Viral Tweets (STRICTLY < 270 CHARACTERS for Twitter limit)."""
+"""Unfiltered Story Rewriter: Rewrites raw Reddit topics into 100% Western/U.S. Rich Unfiltered Viral Tweets (PURE TEXT, STRICTLY < 270 CHARACTERS for Twitter limit)."""
 
 import argparse
 import json
@@ -15,27 +15,7 @@ if sys.platform == "win32":
         pass
 
 
-def download_meme_image(url, index=1):
-    """Download associated image if available."""
-    if not url or not (url.startswith("http://") or url.startswith("https://")):
-        return None
-    try:
-        from curl_cffi import requests
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-        r = requests.get(url, headers=headers, timeout=8)
-        if r.status_code == 200 and len(r.content) > 3000:
-            ext = ".png" if ".png" in url.lower() else ".jpg"
-            out_file = Path(__file__).resolve().parent.parent / "temp" / f"story_img_{index}{ext}"
-            out_file.parent.mkdir(parents=True, exist_ok=True)
-            with open(out_file, "wb") as f:
-                f.write(r.content)
-            return str(out_file)
-    except Exception:
-        pass
-    return None
-
-
-# High-Impression Western Unfiltered Stories (OPTIMIZED STRICTLY < 270 CHARACTERS for X/Twitter limit)
+# High-Impression Western Unfiltered Stories (OPTIMIZED STRICTLY < 270 CHARACTERS for X/Twitter limit, 100% PURE TEXT)
 RICH_WESTERN_STORIES = [
     # 1. Southern SEC College Girls (246 chars)
     (
@@ -100,7 +80,6 @@ def enforce_twitter_limit(text, max_len=270):
     """Ensure tweet never exceeds Twitter 280-char limit."""
     if len(text) <= max_len:
         return text
-    # Smart truncation at last newline
     lines = text.split("\n\n")
     shortened = ""
     for line in lines:
@@ -113,11 +92,8 @@ def enforce_twitter_limit(text, max_len=270):
 
 def rewrite_to_western_unfiltered_story(item, index=1):
     raw_title = item.get("title", "").strip()
-    img_url = item.get("url")
-    img_path = download_meme_image(img_url, index=index)
     title_lower = raw_title.lower()
 
-    # Dynamic adaptation matching topic keywords (enforcing < 270 chars)
     if "tinder" in title_lower or "bio" in title_lower or "height" in title_lower:
         chosen_tweet = (
             "Hard truth about Tinder bios:\n\n"
@@ -126,10 +102,8 @@ def rewrite_to_western_unfiltered_story(item, index=1):
             "People playing games on dating apps in 2026 are wasting their own youth."
         )
     else:
-        # Rotate through the 8 optimized < 270 char Western Unfiltered Stories
         chosen_tweet = RICH_WESTERN_STORIES[(index - 1) % len(RICH_WESTERN_STORIES)]
 
-    # Final Twitter limit safeguard
     final_tweet = enforce_twitter_limit(chosen_tweet, max_len=270)
 
     return {
@@ -138,12 +112,12 @@ def rewrite_to_western_unfiltered_story(item, index=1):
         "char_count": len(final_tweet),
         "source": item.get("source", "r/Reddit"),
         "adapted_tweet": final_tweet,
-        "image_path": img_path
+        "image_path": None  # Pure text tweet (NO IMAGE ATTACHED)
     }
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Rewrite Reddit posts into Western Unfiltered Storytelling tweets (< 270 chars)")
+    parser = argparse.ArgumentParser(description="Rewrite Reddit posts into Western Unfiltered Storytelling tweets (PURE TEXT, < 270 chars)")
     parser.add_argument("--input-file", default="temp/unfiltered_raw_stories.json", help="Input scraped stories JSON")
     parser.add_argument("--output", default="temp/rewritten_memes.json", help="Output path for publisher")
     args = parser.parse_args()
@@ -163,7 +137,7 @@ def main():
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(rewritten, f, ensure_ascii=False, indent=2)
 
-    print(f"🔥 Successfully converted {len(rewritten)} stories into Twitter-ready tweets (< 270 chars) -> {out_path}")
+    print(f"🔥 Successfully converted {len(rewritten)} stories into PURE TEXT Twitter-ready tweets (< 270 chars) -> {out_path}")
 
 
 if __name__ == "__main__":
